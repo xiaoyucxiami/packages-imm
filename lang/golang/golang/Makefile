@@ -7,8 +7,8 @@
 
 include $(TOPDIR)/rules.mk
 
-GO_VERSION_MAJOR_MINOR:=1.19
-GO_VERSION_PATCH:=12
+GO_VERSION_MAJOR_MINOR:=1.22
+GO_VERSION_PATCH:=5
 
 PKG_NAME:=golang
 PKG_VERSION:=$(GO_VERSION_MAJOR_MINOR)$(if $(GO_VERSION_PATCH),.$(GO_VERSION_PATCH))
@@ -20,7 +20,7 @@ GO_SOURCE_URLS:=https://dl.google.com/go/ \
 
 PKG_SOURCE:=go$(PKG_VERSION).src.tar.gz
 PKG_SOURCE_URL:=$(GO_SOURCE_URLS)
-PKG_HASH:=ee5d50e0a7fd74ba1b137cb879609aaaef9880bf72b5d1742100e38ae72bb557
+PKG_HASH:=ac9c723f224969aee624bc34fd34c9e13f2a212d75c71c807de644bb46e112f6
 
 PKG_MAINTAINER:=Jeffery To <jeffery.to@gmail.com>
 PKG_LICENSE:=BSD-3-Clause
@@ -58,20 +58,33 @@ HOST_GO_VALID_OS_ARCH:= \
   \
   dragonfly_amd64 \
   illumos_amd64 \
+  freebsd_riscv64 \
   solaris_amd64 \
   \
   aix_ppc64 \
   js_wasm \
+  wasip1_wasm \
   \
   linux_ppc64 linux_ppc64le \
   linux_mips linux_mipsle linux_mips64 linux_mips64le \
   linux_riscv64 linux_s390x \
+  linux_loong64 \
   \
   openbsd_mips64
 
-BOOTSTRAP_SOURCE:=go1.4-bootstrap-20171003.tar.gz
+ifeq ($(HOST_ARCH),x86_64)
+	PKG_ARCH:=amd64
+	SHA256:=b945ae2bb5db01a0fb4786afde64e6fbab50b67f6fa0eb6cfa4924f16a7ff1eb
+endif
+
+ifeq ($(HOST_ARCH),aarch64)
+	PKG_ARCH:=arm64
+	SHA256:=4e15ab37556e979181a1a1cc60f6d796932223a0f5351d7c83768b356f84429b
+endif
+
+BOOTSTRAP_SOURCE:=go1.20.6.linux-$(PKG_ARCH).tar.gz
 BOOTSTRAP_SOURCE_URL:=$(GO_SOURCE_URLS)
-BOOTSTRAP_HASH:=f4ff5b5eb3a3cae1c993723f3eab519c5bae18866b5e5f96fe1102f0cb5c3e52
+BOOTSTRAP_HASH:=$(SHA256)
 
 BOOTSTRAP_BUILD_DIR:=$(HOST_BUILD_DIR)/.go_bootstrap
 
@@ -213,10 +226,6 @@ define Host/Compile
 
 	mkdir -p "$(GO_BUILD_CACHE_DIR)"
 
-	$(call GoCompiler/Bootstrap/Make, \
-		$(HOST_GO_VARS) \
-	)
-
 	$(call GoCompiler/Host/Make, \
 		GOROOT_BOOTSTRAP="$(BOOTSTRAP_ROOT_DIR)" \
 		$(if $(HOST_GO_ENABLE_PIE),GO_LDFLAGS="-buildmode pie") \
@@ -263,7 +272,7 @@ $(eval $(call GoCompiler/AddProfile,Package,$(PKG_BUILD_DIR),$(PKG_GO_PREFIX),$(
 PKG_GO_ZBOOTSTRAP_MODS:= \
 	s/defaultGO386 = `[^`]*`/defaultGO386 = `$(or $(GO_386),sse2)`/; \
 	s/defaultGOAMD64 = `[^`]*`/defaultGOAMD64 = `$(or $(GO_AMD64),v1)`/; \
-	s/defaultGOARM = `[^`]*`/defaultGOARM = `$(or $(GO_ARM),5)`/; \
+	s/defaultGOARM = `[^`]*`/defaultGOARM = `$(or $(GO_ARM),7)`/; \
 	s/defaultGOMIPS = `[^`]*`/defaultGOMIPS = `$(or $(GO_MIPS),hardfloat)`/; \
 	s/defaultGOMIPS64 = `[^`]*`/defaultGOMIPS64 = `$(or $(GO_MIPS64),hardfloat)`/; \
 	s/defaultGOPPC64 = `[^`]*`/defaultGOPPC64 = `$(or $(GO_PPC64),power8)`/;
